@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BUCAS Center Distribution by Region</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --luzon:#1B4F8A;--luzon-mid:#3A7CC5;--luzon-glow:rgba(27,79,138,.18);
+  --visayas:#0A6B4A;--visayas-mid:#1FAE7A;--visayas-glow:rgba(10,107,74,.18);
+  --mindanao:#9B3510;--mindanao-mid:#D95C28;--mindanao-glow:rgba(155,53,16,.18);
+  --bg:#0E1520;--bg2:#141E2D;--bg3:#1A2640;
+  --surface:#1E2D42;--surface2:#243348;
+  --border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.14);
+  --text:#EDF2F8;--text2:#9AAFC4;--text3:#5A7490;
+  --accent:#F0A830;
+  --map-land:#1D2E45;--map-stroke:#2E4460;--map-water:#0D1824;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+/* ── HEADER ── */
+.header{
+  padding:26px 40px 20px;
+  background:linear-gradient(180deg,#0B1220 0%,var(--bg) 100%);
+  border-bottom:1px solid var(--border);
+  position:relative;overflow:hidden;
+}
+.header::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--luzon) 0%,var(--luzon-mid) 32%,var(--visayas-mid) 33%,var(--visayas-mid) 65%,var(--mindanao-mid) 66%,var(--mindanao) 100%);
+}
+.header-inner{max-width:1400px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap;}
+.eyebrow{font-size:10px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:9px;display:flex;align-items:center;gap:8px;}
+.eyebrow::before{content:'';display:inline-block;width:20px;height:1px;background:var(--accent);}
+h1{font-family:'Libre Baskerville',serif;font-size:clamp(18px,2.5vw,30px);font-weight:700;color:var(--text);line-height:1.15;margin-bottom:6px;}
+.subtitle{font-size:13px;color:var(--text2);line-height:1.55;max-width:560px;}
+.subtitle strong{color:var(--visayas-mid);font-weight:600;}
+.header-kpis{display:flex;gap:12px;flex-shrink:0;align-items:flex-start;}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 16px;text-align:center;min-width:72px;}
+.kpi-val{font-family:'Libre Baskerville',serif;font-size:24px;font-weight:700;line-height:1;}
+.kpi-lbl{font-size:9px;letter-spacing:.11em;text-transform:uppercase;color:var(--text3);margin-top:3px;}
+.kpi.total   .kpi-val{color:var(--accent);}
+.kpi.luzon   .kpi-val{color:var(--luzon-mid);}
+.kpi.visayas .kpi-val{color:var(--visayas-mid);}
+.kpi.mindanao.kpi-val{color:var(--mindanao-mid);}
+
+/* ── CONTROLS BAR: island filters + view toggle ── */
+.view-bar{
+  padding:10px 40px;background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+}
+.filter-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.ctrl-lbl{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin-right:2px;}
+.fbtn{
+  font-family:'Outfit',sans-serif;font-size:11.5px;font-weight:500;
+  padding:5px 14px;border-radius:20px;
+  border:1px solid var(--border2);background:transparent;
+  color:var(--text2);cursor:pointer;transition:all .18s;
+}
+.fbtn:hover{border-color:rgba(255,255,255,.3);color:var(--text);}
+.fbtn.on{color:#fff;border-color:transparent;}
+.fbtn[data-ig="all"].on   {background:var(--accent);}
+.fbtn[data-ig="Luzon"].on {background:var(--luzon);}
+.fbtn[data-ig="Visayas"].on  {background:var(--visayas);}
+.fbtn[data-ig="Mindanao"].on {background:var(--mindanao);}
+.vbtn{
+  font-family:'Outfit',sans-serif;font-size:11.5px;font-weight:500;
+  padding:6px 16px;border-radius:8px;
+  border:1px solid var(--border2);background:transparent;
+  color:var(--text3);cursor:pointer;transition:all .15s;
+}
+.vbtn:hover{color:var(--text);border-color:rgba(255,255,255,.25);}
+.vbtn.on{background:var(--surface2);border-color:var(--border2);color:var(--text);}
+.view-toggle{display:flex;gap:4px;}
+
+/* ── LAYOUT ── */
+.main{display:flex;max-width:1400px;margin:0 auto;min-height:calc(100vh - 148px);}
+
+/* ── LEFT PANEL ── */
+.left-panel{
+  width:252px;flex-shrink:0;background:var(--bg2);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow-y:auto;
+}
+.ps{padding:16px 16px 12px;border-bottom:1px solid var(--border);}
+.ps-title{font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--text3);margin-bottom:11px;}
+.leg-row{display:flex;align-items:center;gap:9px;margin-bottom:8px;}
+.leg-sw{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+.leg-txt{font-size:12px;color:var(--text2);}
+.leg-n{margin-left:auto;font-family:'Libre Baskerville',serif;font-size:13px;font-weight:700;}
+.leg-n.lz{color:var(--luzon-mid);}
+.leg-n.vi{color:var(--visayas-mid);}
+.leg-n.mi{color:var(--mindanao-mid);}
+.rl-head{padding:12px 16px 7px;font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--text3);}
+.region-list{flex:1;overflow-y:auto;}
+.ri{display:flex;align-items:center;gap:9px;padding:8px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .14s;}
+.ri:hover,.ri.sel{background:var(--surface);}
+.ri-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.ri-name{font-size:11px;color:var(--text2);line-height:1.35;flex:1;}
+.ri-n{font-family:'Libre Baskerville',serif;font-size:13px;font-weight:700;color:var(--text);flex-shrink:0;}
+
+/* ── MAP AREA ── */
+.map-area{flex:1;position:relative;background:var(--map-water);overflow:hidden;}
+#map-svg{position:absolute;inset:0;width:100%;height:100%;display:block;}
+#choro-svg{position:absolute;inset:0;width:100%;height:100%;display:none;}
+#bar-wrap{position:absolute;inset:0;overflow-y:auto;padding:18px 0;display:none;}
+#bar-svg{position:relative;display:block;}
+
+/* ── SIZE LEGEND ── */
+.sz-legend{
+  position:absolute;bottom:14px;left:14px;
+  background:rgba(10,17,28,.88);border:1px solid var(--border2);
+  border-radius:10px;padding:10px 13px;pointer-events:none;
+}
+.sz-title{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--text3);margin-bottom:7px;}
+.sz-items{display:flex;align-items:flex-end;gap:10px;}
+.sz-item{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.sz-circle{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:50%;}
+.sz-lbl{font-size:9px;color:var(--text3);}
+
+/* ── CHOROPLETH LEGEND ── */
+.ch-legend{
+  position:absolute;bottom:14px;left:14px;
+  background:rgba(10,17,28,.88);border:1px solid var(--border2);
+  border-radius:10px;padding:10px 14px;pointer-events:none;display:none;
+}
+.ch-title{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;}
+.ch-scale{display:flex;align-items:center;gap:6px;}
+.ch-bar{width:120px;height:10px;border-radius:3px;}
+.ch-labels{display:flex;justify-content:space-between;width:120px;margin-top:4px;}
+.ch-label{font-size:9px;color:var(--text3);}
+.ch-swatches{display:flex;flex-direction:column;gap:5px;margin-top:8px;}
+.ch-swatch-row{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text2);}
+.ch-swatch{width:12px;height:12px;border-radius:2px;flex-shrink:0;}
+
+/* ── TOOLTIP ── */
+#tt{
+  position:fixed;pointer-events:none;z-index:9999;
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:13px;min-width:255px;max-width:330px;
+  box-shadow:0 10px 40px rgba(0,0,0,.55);display:none;overflow:hidden;
+}
+.tt-stripe{height:3px;}
+.tt-head{padding:11px 15px 9px;}
+.tt-ig{font-size:9px;font-weight:600;letter-spacing:.17em;text-transform:uppercase;margin-bottom:3px;}
+.tt-region{font-family:'Libre Baskerville',serif;font-size:14px;font-weight:700;color:var(--text);line-height:1.3;}
+.tt-sub{font-size:10px;color:var(--text3);margin-top:2px;}
+.tt-div{height:1px;background:var(--border);}
+.tt-body{padding:9px 15px 11px;}
+.tt-row{display:flex;gap:7px;margin-bottom:5px;font-size:10.5px;}
+.tt-lbl{color:var(--text3);min-width:80px;flex-shrink:0;}
+.tt-val{color:var(--text2);font-weight:500;}
+.tt-ch-head{font-size:9px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:var(--text3);margin:8px 0 5px;}
+.tt-c{padding:6px 9px;background:var(--bg3);border-radius:7px;margin-bottom:4px;}
+.tt-cn{font-size:10.5px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.tt-cm{font-size:9.5px;color:var(--text3);line-height:1.5;}
+.badge{display:inline-block;padding:1px 6px;border-radius:7px;font-size:8.5px;font-weight:600;margin-right:3px;}
+.b-lv{background:rgba(255,255,255,.09);color:var(--text2);}
+
+/* ── DETAIL PANEL ── */
+#dp{
+  position:absolute;top:0;right:0;bottom:0;width:310px;
+  background:var(--bg2);border-left:1px solid var(--border);
+  display:none;flex-direction:column;overflow:hidden;z-index:10;
+  animation:slideIn .22s ease;
+}
+@keyframes slideIn{from{transform:translateX(32px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+.dp-hdr{padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;position:relative;padding-right:44px;}
+.dp-close{position:absolute;top:12px;right:12px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);width:27px;height:27px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;line-height:1;transition:all .14s;}
+.dp-close:hover{background:var(--surface);color:var(--text);}
+.dp-ig{font-size:9px;font-weight:600;letter-spacing:.17em;text-transform:uppercase;margin-bottom:4px;}
+.dp-reg{font-family:'Libre Baskerville',serif;font-size:15px;font-weight:700;color:var(--text);line-height:1.3;}
+.dp-stats{display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--border);flex-shrink:0;}
+.dp-stat{padding:9px 12px;border-right:1px solid var(--border);text-align:center;}
+.dp-stat:last-child{border-right:none;}
+.dp-sv{font-family:'Libre Baskerville',serif;font-size:19px;font-weight:700;}
+.dp-sl{font-size:8px;letter-spacing:.11em;text-transform:uppercase;color:var(--text3);margin-top:2px;}
+.dp-list{flex:1;overflow-y:auto;padding:8px 0;}
+.dp-item{padding:11px 16px;border-bottom:1px solid var(--border);}
+.dp-item:last-child{border-bottom:none;}
+.dp-iname{font-size:11px;font-weight:600;color:var(--text);margin-bottom:4px;line-height:1.4;}
+.dp-ifull{font-size:9.5px;color:var(--text3);margin-bottom:6px;line-height:1.4;}
+.dp-igrid{display:grid;grid-template-columns:1fr 1fr;gap:4px 9px;}
+.dp-f{font-size:9.5px;color:var(--text3);}
+.dp-f span{color:var(--text2);display:block;font-weight:500;margin-top:1px;}
+.dp-f.full{grid-column:1/-1;}
+
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+@media(max-width:860px){
+  .header{padding:18px 20px 16px;}.header-kpis{display:none;}
+  .view-bar{padding:8px 20px;}
+  .main{flex-direction:column;}
+  .left-panel{width:100%;max-height:170px;flex-direction:row;}
+  .map-area{min-height:400px;}
+  #dp{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-inner">
+    <div>
+      <div class="eyebrow">Department of Health — Philippines</div>
+      <h1>BUCAS Center Distribution by Region</h1>
+      <p class="subtitle"><strong>Central Visayas leads</strong> in Number of Established BUCAS Centers as of December 31, 2025</p>
+    </div>
+    <div class="header-kpis">
+      <div class="kpi total">   <div class="kpi-val" id="k-total">—</div>  <div class="kpi-lbl">Total</div></div>
+      <div class="kpi luzon">   <div class="kpi-val" id="k-lz">—</div>     <div class="kpi-lbl">Luzon</div></div>
+      <div class="kpi visayas"> <div class="kpi-val" id="k-vi">—</div>     <div class="kpi-lbl">Visayas</div></div>
+      <div class="kpi mindanao"><div class="kpi-val" id="k-mi">—</div>     <div class="kpi-lbl">Mindanao</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- VIEW TOGGLE ONLY -->
+<div class="view-bar">
+  <div class="filter-group">
+    <span class="ctrl-lbl">Island Group</span>
+    <button class="fbtn on" data-ig="all">All</button>
+    <button class="fbtn" data-ig="Luzon">Luzon</button>
+    <button class="fbtn" data-ig="Visayas">Visayas</button>
+    <button class="fbtn" data-ig="Mindanao">Mindanao</button>
+  </div>
+  <div class="view-toggle">
+    <button class="vbtn on" id="btn-map">🗺 Bubble Map</button>
+    <button class="vbtn"    id="btn-choro">🎨 Heatmap</button>
+    <button class="vbtn"    id="btn-bar">▬ Bar Chart</button>
+  </div>
+</div>
+
+<div class="main">
+  <!-- LEFT PANEL -->
+  <aside class="left-panel">
+    <div class="ps">
+      <div class="ps-title">Island Group</div>
+      <div class="leg-row"><div class="leg-sw" style="background:var(--luzon-mid)"></div><span class="leg-txt">Luzon</span><span class="leg-n lz" id="lc-lz">—</span></div>
+      <div class="leg-row"><div class="leg-sw" style="background:var(--visayas-mid)"></div><span class="leg-txt">Visayas</span><span class="leg-n vi" id="lc-vi">—</span></div>
+      <div class="leg-row"><div class="leg-sw" style="background:var(--mindanao-mid)"></div><span class="leg-txt">Mindanao</span><span class="leg-n mi" id="lc-mi">—</span></div>
+    </div>
+    <div class="rl-head">Regions · ranked by count</div>
+    <div class="region-list" id="rl"></div>
+  </aside>
+
+  <!-- CHART AREA -->
+  <div class="map-area" id="map-area">
+
+    <!-- 1: Bubble Map -->
+    <svg id="map-svg"></svg>
+
+    <!-- 2: Choropleth / Heatmap -->
+    <svg id="choro-svg"></svg>
+
+    <!-- 3: Bar chart -->
+    <div id="bar-wrap"><svg id="bar-svg"></svg></div>
+
+    <!-- Bubble size legend -->
+    <div class="sz-legend" id="sz-leg">
+      <div class="sz-title">Bubble = # of centers</div>
+      <div class="sz-items">
+        <div class="sz-item"><div class="sz-circle" style="width:6px;height:6px"></div><span class="sz-lbl">1</span></div>
+        <div class="sz-item"><div class="sz-circle" style="width:10px;height:10px"></div><span class="sz-lbl">4</span></div>
+        <div class="sz-item"><div class="sz-circle" style="width:14px;height:14px"></div><span class="sz-lbl">8+</span></div>
+      </div>
+    </div>
+
+    <!-- Choropleth legend -->
+    <div class="ch-legend" id="ch-leg">
+      <div class="ch-title">Centers per region</div>
+      <div class="ch-swatches" id="ch-swatches"></div>
+    </div>
+
+    <!-- Detail panel -->
+    <div id="dp">
+      <div class="dp-hdr">
+        <div class="dp-ig" id="dp-ig"></div>
+        <div class="dp-reg" id="dp-reg"></div>
+      </div>
+      <button class="dp-close" id="dp-close">×</button>
+      <div class="dp-stats">
+        <div class="dp-stat"><div class="dp-sv" id="dp-cnt" style="color:var(--accent)">—</div><div class="dp-sl">Centers</div></div>
+        <div class="dp-stat"><div class="dp-sv" id="dp-prov">—</div><div class="dp-sl">Provinces</div></div>
+        <div class="dp-stat"><div class="dp-sv" id="dp-lv3">—</div><div class="dp-sl">Level 3</div></div>
+      </div>
+      <div class="dp-list" id="dp-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="tt"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────
+const RAW=[
+ {name:"JASMC-BUCAS Sto Tomas, Pampanga",island:"Luzon",region:"Region III (Central Luzon)",province:"Pampanga",level:"3",fullName:"Jose B. Lingad Memorial General Hospital (JBLMGH) Ambulatory Surgical and Multispecialty Center with BUCAS- Sto. Tomas, Pampanga",proponent:"Jose B. Lingad Memorial General Hospital",address:"Yakal Street, Blue Diamond Subdivision, San Vicente, Sto.Tomas, Pampanga",inaug:"March 6, 2024",start:"March 6, 2024",hours:"6:00 AM – 10:00 PM",lat:15.12,lng:120.73},
+ {name:"ZRMC BUCAS Center",island:"Mindanao",region:"Region IX (Zamboanga Peninsula)",province:"Zamboanga del Sur",level:"1",fullName:"Zamboanga Regional Medical Center (ZRMC) BUCAS Center",proponent:"Zamboanga Regional Medical Center",address:"Zamboanga Regional Medical Center, Pasobolong, Zamboanga City",inaug:"March 25, 2024",start:"March 25, 2024",hours:"24 hours",lat:6.91,lng:122.07},
+ {name:"VSMMC SugBUCAS-Carcar",island:"Visayas",region:"Region VII (Central Visayas)",province:"Cebu",level:"3",fullName:"Vicente Sotto Memorial Medical Center (VSMMC) SugBUCAS Center-Carcar",proponent:"Vicente Sotto Memorial Medical Center",address:"Cebu Provincial Hospital, Barraca St, Poblacion II, Carcar City, Cebu",inaug:"April 16, 2024",start:"April 17, 2024",hours:"24 hours",lat:10.11,lng:123.64},
+ {name:"SGH BUCAS Center",island:"Mindanao",region:"Region XII (SOCCSKSARGEN)",province:"South Cotabato",level:"1",fullName:"SOCCSKSARGEN General Hospital (SGH) BUCAS Center",proponent:"SOCCSKSARGEN General Hospital",address:"SOCCSKSARGEN General Hospital, Crossing Curva, Brgy Dajay, Surallah, South Cotabato",inaug:"April 15, 2024",start:"April 12, 2024",hours:"7:00 AM – 7:00 PM",lat:6.37,lng:124.73},
+ {name:"VSMMC SugBUCAS-Bantayan",island:"Visayas",region:"Region VII (Central Visayas)",province:"Cebu",level:"3",fullName:"Vicente Sotto Memorial Medical Center (VSMMC) SugBUCAS Center-Bantayan",proponent:"Vicente Sotto Memorial Medical Center",address:"Bantayan District Hospital, MY Village, Ticad, Bantayan, Cebu",inaug:"April 16, 2024",start:"April 17, 2024",hours:"24 hours",lat:11.17,lng:123.72},
+ {name:"ZCMC-WMSU BUCAS Center",island:"Mindanao",region:"Region IX (Zamboanga Peninsula)",province:"Zamboanga del Sur",level:"3",fullName:"Zamboanga City Medical Center (ZCMC) – Western Mindanao State University BUCAS Center",proponent:"Zamboanga City Medical Center",address:"Normal Rd, Zamboanga, 7000 Zamboanga del Sur",inaug:"May 9, 2024",start:"May 9, 2024",hours:"8:00 AM – 5:00 PM",lat:6.93,lng:122.06},
+ {name:"GCGMMC-Tagbilaran BUCAS Center",island:"Visayas",region:"Region VII (Central Visayas)",province:"Bohol",level:"3",fullName:"Governor Celestino Gallares Memorial Medical Center (GCGMMC) – Tagbilaran BUCAS Center",proponent:"Governor Celestino Gallares Memorial Medical Center",address:"Tagbilaran City Hall Grounds, Jose A. Clarin Street, Tagbilaran City, Bohol",inaug:"May 10, 2024",start:"May 13, 2024",hours:"8:00 AM – 10:00 PM",lat:9.65,lng:123.85},
+ {name:"GCGMMC-Trinidad BUCAS Center",island:"Visayas",region:"Region VII (Central Visayas)",province:"Bohol",level:"3",fullName:"Governor Celestino Gallares Memorial Medical Center (GCGMMC) – Trinidad BUCAS Center",proponent:"Governor Celestino Gallares Memorial Medical Center",address:"Trinidad Rural Health Unit, Purok 3, Poblacion, Municipality of Trinidad, Bohol",inaug:"May 10, 2024",start:"May 13, 2024",hours:"Wednesday to Friday · 8:00 AM – 5:00 PM",lat:9.96,lng:124.04},
+ {name:"WVMC BUCAS Center",island:"Visayas",region:"Region VI (Western Visayas)",province:"City of Iloilo",level:"3",fullName:"Western Visayas Medical Center (WVMC) BUCAS Center",proponent:"Western Visayas Medical Center",address:"Main OPD Building, Western Visayas Medical Center, Q. Abeto St., Mandurriao, Iloilo",inaug:"May 22, 2024",start:"May 25, 2024",hours:"Weekends & Holidays 5:00 PM–5:00 AM · Sunday 2:00 PM–5:00 AM",lat:10.72,lng:122.54},
+ {name:"EVMC Villaba BUCAS Center",island:"Visayas",region:"Region VIII (Eastern Visayas)",province:"Leyte",level:"3",fullName:"Eastern Visayas Medical Center (EVMC) Villaba BUCAS Center",proponent:"Eastern Visayas Medical Center",address:"Brgy Cabungahan, Villaba, Leyte",inaug:"May 23, 2024",start:"May 27, 2024",hours:"8:00 AM – 4:00 PM",lat:11.20,lng:124.40},
+ {name:"EVMC Tolosa Polyclinic BUCAS Center",island:"Visayas",region:"Region VIII (Eastern Visayas)",province:"Leyte",level:"3",fullName:"Eastern Visayas Medical Center (EVMC) – Tolosa Polyclinic BUCAS Center",proponent:"Eastern Visayas Medical Center",address:"Brgy. Telegrafo, Tolosa, Leyte",inaug:"May 23, 2024",start:"June 13, 2024",hours:"8:00 AM – 5:00 PM",lat:11.05,lng:124.77},
+ {name:"EAMC Urgent and Ambulatory Care",island:"Luzon",region:"National Capital Region (NCR)",province:"Quezon City",level:"3",fullName:"East Avenue Medical Center (EAMC) Urgent and Ambulatory Care",proponent:"East Avenue Medical Center",address:"East Avenue Medical Center, East Avenue, Brgy Central, Diliman, Quezon City",inaug:"May 24, 2024",start:"November 20, 2023",hours:"FM-ACS Weekdays 2–4 PM · Weekends & Holidays 6 AM–6 PM",lat:14.647,lng:121.052},
+ {name:"MMMHMC-Banna BUCAS Center",island:"Luzon",region:"Region I (Ilocos Region)",province:"Ilocos Norte",level:"3",fullName:"Mariano Marcos Memorial Hospital and Medical Center (MMMHMC) – Banna BUCAS Center",proponent:"Mariano Marcos Memorial Hospital and Medical Center",address:"Brgy. 4 Marcos, Braceros St., Banna, Ilocos Norte",inaug:"May 28, 2024",start:"March 14, 2024",hours:"9:00 AM – 3:00 PM",lat:18.07,lng:120.63},
+ {name:"ASTMMC Ambulatory Care Unit",island:"Mindanao",region:"Region XIII (Caraga)",province:"Surigao del Sur",level:"2",fullName:"Adela Serra Ty Memorial Medical Center (ASTMMC) Ambulatory Care Unit",proponent:"Adela Serra Ty Memorial Medical Center",address:"Adela Serra Ty Memorial Medical Center, Capitol Hills, Telaje, Tandag City, Surigao del Sur",inaug:"May 31, 2024",start:"May 20, 2024",hours:"8:00 AM – 5:00 PM",lat:9.08,lng:126.20},
+ {name:"DJRMH BUCAS Center",island:"Mindanao",region:"Region IX (Zamboanga Peninsula)",province:"Zamboanga del Norte",level:"1",fullName:"Dr. Jose Rizal Memorial Hospital (DJRMH) BUCAS Center",proponent:"Dr. Jose Rizal Memorial Hospital",address:"Dr. Jose Rizal Memorial Hospital, Dapitan City, Zamboanga del Norte",inaug:"May 31, 2024",start:"May 31, 2024",hours:"Weekdays 5:01–8:00 PM · Weekends & Holidays 8:00–11:00 AM",lat:8.65,lng:123.42},
+ {name:"MRH BUCAS Center",island:"Mindanao",region:"Region IX (Zamboanga Peninsula)",province:"Zamboanga del Sur",level:"1",fullName:"Margosatubig Regional Hospital (MRH) BUCAS Center",proponent:"Margosatubig Regional Hospital",address:"Margosatubig Regional Hospital, Nightingale St., Poblacion, Margosatubig, Zamboanga Del Sur",inaug:"May 31, 2024",start:"June 1, 2024",hours:"Diagnostic & Minor Injury 8 AM–8 PM · Other Services 8 AM–5 PM",lat:7.58,lng:123.17},
+ {name:"ITRMC-Tubao BUCAS Center",island:"Luzon",region:"Region I (Ilocos Region)",province:"La Union",level:"3",fullName:"Ilocos Training and Regional Medical Center (ITRMC) Tubao BUCAS Center",proponent:"Ilocos Training and Regional Medical Center",address:"Brgy. Francia Sur, Tubao, La Union",inaug:"June 14, 2024",start:"May 31, 2024",hours:"7:00 AM – 11:00 PM",lat:16.62,lng:120.42},
+ {name:"CRMC BUCAS Center",island:"Mindanao",region:"BARMM",province:"Cotabato City",level:"3",fullName:"Cotabato Regional Medical Center (CRMC) BUCAS Center",proponent:"Cotabato Regional Medical Center",address:"Cotabato Regional Medical Center, 10 Sinsuat Avenue, Cotabato City",inaug:"June 18, 2024",start:"March 4, 2024",hours:"6:00 AM – 10:00 PM",lat:7.21,lng:124.24},
+ {name:"CotSanGen BUCAS Center",island:"Mindanao",region:"BARMM",province:"Maguindanao del Norte",level:"3",fullName:"Cotabato Sanitarium & General Hospital (CSGH) BUCAS Center",proponent:"Cotabato Sanitarium & General Hospital",address:"Cotabato Sanitarium and General Hospital, Ibotigen Road, Sultan Kudarat, Maguindanao Del Norte",inaug:"June 18, 2024",start:"July 15, 2024",hours:"6:00 AM – 8:00 PM",lat:7.11,lng:124.18},
+ {name:"DOGH BUCAS Center",island:"Mindanao",region:"Region XI (Davao Region)",province:"Davao Occidental",level:"1",fullName:"Davao Occidental General Hospital (DOGH) BUCAS Center",proponent:"Davao Occidental General Hospital",address:"Sitio Inaburan, Culaman, Malita, Davao Occidental",inaug:"June 25, 2024",start:"July 1, 2024",hours:"8:00 AM – 5:00 PM",lat:6.42,lng:125.61},
+ {name:"DJNRMHS Ambulatory Surgical Clinic",island:"Luzon",region:"Region III (Central Luzon)",province:"Bulacan",level:"3",fullName:"Dr Jose N Rodriguez Memorial Hospital (DJNRMH) Ambulatory Surgical Clinic",proponent:"Dr. Jose N. Rodriguez Memorial Hospital and Sanitarium",address:"Towerville 2, Minuyan Proper, City of San Jose Del Monte, Bulacan",inaug:"June 27, 2024",start:"June 27, 2024",hours:"6:00 AM – 10:00 PM",lat:14.81,lng:121.05},
+ {name:"MHARSMC-PCH BUCAS Center",island:"Mindanao",region:"Region X (Northern Mindanao)",province:"Misamis Occidental",level:"3",fullName:"Mayor Hilarion A. Ramiro Sr. Medical Center – Plaridel Community Hospital BUCAS Center",proponent:"Mayor Hilarion A. Ramiro Sr. Medical Center",address:"Plaridel Community Hospital, Plaridel, Misamis Occidental",inaug:"June 28, 2024",start:"March 11, 2024",hours:"MWF · 9:00 AM – 4:00 PM",lat:8.37,lng:123.73},
+ {name:"LHMRH-Natonin BUCAS Center",island:"Luzon",region:"Cordillera Administrative Region (CAR)",province:"Mountain Province",level:"2",fullName:"Luis Hora Memorial Regional Hospital (LHMRH) – Natonin BUCAS Center",proponent:"Luis Hora Memorial Regional Hospital",address:"Anastacia Rafael Sagel Memorial Hospital, Poblacion, Natonin, Mountain Province",inaug:"July 2, 2024",start:"July 1, 2024",hours:"Onsite once a month · Teleconsultation 1:00–4:00 PM",lat:17.05,lng:121.20},
+ {name:"BatMC-BatStateU BUCAS Center",island:"Luzon",region:"CALABARZON",province:"Batangas",level:"3",fullName:"Batangas Medical Center (BatMC) – Batangas State University BUCAS Center",proponent:"Batangas Medical Center",address:"BatStateU P. Borbon Main Campus, Rizal Ave. Extension, Batangas City, Batangas",inaug:"July 13, 2024",start:"July 15, 2024",hours:"Monday to Friday · 10:00 AM – 7:00 PM",lat:13.76,lng:121.06},
+ {name:"ARMMC AGAP Center",island:"Luzon",region:"National Capital Region (NCR)",province:"City of Marikina",level:"3",fullName:"Amang Rodriguez Memorial Medical Center (ARMMC) AGAP Center",proponent:"Amang Rodriguez Memorial Medical Center",address:"Sumulong Highway, Sto. Nino, City of Marikina",inaug:"July 15, 2024",start:"August 15, 2024",hours:"4:00 PM – 12:00 AM",lat:14.64,lng:121.11},
+ {name:"SIMC-Mallig BUCAS Center",island:"Luzon",region:"Region II (Cagayan Valley)",province:"Isabela",level:"3",fullName:"Southern Isabela Medical Center (SIMC) – Mallig BUCAS Center",proponent:"Southern Isabela Medical Center",address:"Mallig Super Health Center, Centro II, Mallig, Isabela",inaug:"August 15, 2024",start:"August 15, 2024",hours:"8:00 AM – 5:00 PM",lat:17.21,lng:121.63},
+ {name:"DRMC BUCAS Center",island:"Mindanao",region:"Region XI (Davao Region)",province:"Davao del Norte",level:"3",fullName:"Davao Regional Medical Center (DRMC) BUCAS Center",proponent:"Davao Regional Medical Center",address:"Maharlika Highway Corner Timog Avenue, Canocotan, Tagum City, Davao del Norte",inaug:"August 13, 2024",start:"May 2, 2024",hours:"6:00 AM – 10:00 PM",lat:7.44,lng:125.81},
+ {name:"CVMC-Amulung BUCAS Center",island:"Luzon",region:"Region II (Cagayan Valley)",province:"Cagayan",level:"3",fullName:"Cagayan Valley Medical Center (CVMC) – Amulung BUCAS Center",proponent:"Cagayan Valley Medical Center",address:"Alcala-Amulung-Solana Road, Sitio Barung, Nangalsauan, Amulung, Cagayan",inaug:"August 15, 2024",start:"August 15, 2024",hours:"8:00 AM – 4:00 PM",lat:17.81,lng:121.73},
+ {name:"BUCAS PUSO",island:"Luzon",region:"National Capital Region (NCR)",province:"Quezon City",level:"3",fullName:"Philippine Heart Center (PHC) BUCAS PUSO",proponent:"Philippine Heart Center",address:"Philippine Heart Center, East Ave, Diliman, Quezon City, Metro Manila",inaug:"September 10, 2024",start:"September 11, 2024",hours:"24 hours",lat:14.649,lng:121.048},
+ {name:"CDH-Calaoan BUCAS Center",island:"Luzon",region:"Cordillera Administrative Region (CAR)",province:"Apayao",level:"2",fullName:"Conner District Hospital (CDH) Calaoan BUCAS Center",proponent:"Conner District Hospital",address:"Purok 3, Daga, Conner, Apayao",inaug:"September 10, 2024",start:"September 10, 2024",hours:"8:00 AM – 5:00 PM every Thursday",lat:18.01,lng:121.33},
+ {name:"CDH-Mataguisi BUCAS Center",island:"Luzon",region:"Cordillera Administrative Region (CAR)",province:"Apayao",level:"2",fullName:"Conner District Hospital (CDH) Mataguisi BUCAS Center",proponent:"Conner District Hospital",address:"Purok 7, Barangay Mataguisi, Pudtol, Apayao",inaug:"September 10, 2024",start:"September 11, 2024",hours:"8:00 AM – 4:00 PM",lat:18.07,lng:121.27},
+ {name:"FNLGHTC-Tanglagan BUCAS Center",island:"Luzon",region:"Cordillera Administrative Region (CAR)",province:"Apayao",level:"2",fullName:"Far North Luzon General Hospital and Training Center (FNLGHTC) Tanglagan BUCAS Center",proponent:"Far North Luzon General Hospital and Training Center",address:"Barangay Tanglagan, Calanasan, Apayao",inaug:"September 11, 2024",start:"October 29, 2024",hours:"8:00 AM – 5:00 PM",lat:18.14,lng:121.20},
+ {name:"FNLGHTC-Kasaranay BUCAS Center",island:"Luzon",region:"Cordillera Administrative Region (CAR)",province:"Apayao",level:"2",fullName:"Far North Luzon General Hospital and Training Center (FNLGHTC) Kasaranay BUCAS Center",proponent:"Far North Luzon General Hospital and Training Center",address:"Barangay Marag, Luna, Apayao",inaug:"September 11, 2024",start:"September 11, 2024",hours:"8:00 AM – 5:00 PM",lat:18.22,lng:121.10},
+ {name:"STRH BUCAS Center",island:"Luzon",region:"CALABARZON",province:"Cavite",level:"2",fullName:"Southern Tagalog Regional Hospital (STRH) BUCAS Center",proponent:"Southern Tagalog Regional Hospital",address:"Sampaguita Street, Barangay 28 Sta Cruz, Cavite City, Cavite",inaug:"September 12, 2024",start:"September 12, 2024",hours:"10:00 AM – 6:00 PM",lat:14.48,lng:120.91},
+ {name:"QMMC BUCAS Center",island:"Luzon",region:"National Capital Region (NCR)",province:"Quezon City",level:"3",fullName:"Quirino Memorial Medical Center BUCAS Center",proponent:"Quirino Memorial Medical Center",address:"#3 20th Avenue, Cubao, Quezon City",inaug:"October 10, 2024",start:"September 11, 2024",hours:"8:00 AM – 5:00 PM",lat:14.628,lng:121.056},
+ {name:"Dr. PJGMRMC BUCAS Super Health Center",island:"Luzon",region:"Region III (Central Luzon)",province:"Nueva Ecija",level:"3",fullName:"Dr. Paulino J. Garcia Memorial Research and Medical Center (DPJGMRMC) BUCAS Super Health Center",proponent:"Dr. Paulino J. Garcia Memorial Research and Medical Center",address:"Maharlika Highway, Del Pilar, Rizal, Nueva Ecija",inaug:"October 16, 2024",start:"October 17, 2024",hours:"8:00 AM – 5:00 PM",lat:15.38,lng:120.93},
+ {name:"Siargao Island Medical Center BUCAS Center",island:"Mindanao",region:"Region XIII (Caraga)",province:"Surigao del Norte",level:"1",fullName:"Siargao Island Medical Center (SIMC) BUCAS Center",proponent:"Siargao Island Medical Center",address:"Barangay 5, General Luna, Surigao Del Norte",inaug:"November 14, 2024",start:"November 14, 2024",hours:"8:00 AM – 5:00 PM",lat:9.80,lng:126.11},
+ {name:"CuSGH digiBUCAS",island:"Luzon",region:"MIMAROPA",province:"Palawan",level:"2",fullName:"Culion Sanitarium and General Hospital (CSGH) digiBUCAS Center",proponent:"Culion Sanitarium and General Hospital",address:"Fernandez Building, Culion Sanitarium and General Hospital, Tiza, Culion, Palawan",inaug:"December 10, 2024",start:"December 10, 2024",hours:"8:00 AM – 5:00 PM",lat:11.88,lng:120.02},
+ {name:"OnP BUCAS Center",island:"Luzon",region:"MIMAROPA",province:"City of Puerto Princesa",level:"2",fullName:"Ospital ng Palawan (OnP) BUCAS Center",proponent:"Ospital ng Palawan",address:"Ospital ng Palawan, 220 Malvar Street, San Miguel, Puerto Princesa City, Palawan",inaug:"December 11, 2024",start:"December 16, 2024",hours:"8:00 AM – 8:00 PM",lat:9.74,lng:118.74},
+ {name:"CVMC-Santa Teresita BUCAS Center",island:"Luzon",region:"Region II (Cagayan Valley)",province:"Cagayan",level:"3",fullName:"CVMC-Santa Teresita BUCAS Center",proponent:"Cagayan Valley Medical Center",address:"Barangay Centro East, Sta Teresita, Cagayan",inaug:"December 17, 2024",start:"December 17, 2024",hours:"8:00 AM – 5:00 PM",lat:17.62,lng:121.89},
+ {name:"CGH-Sagay BUCAS Center",island:"Mindanao",region:"Region X (Northern Mindanao)",province:"Camiguin",level:"1",fullName:"Camiguin General Hospital (CGH) – Sagay BUCAS Center",proponent:"Camiguin General Hospital",address:"LGU Sagay, Poblacion, Sagay, Camiguin",inaug:"February 17, 2025",start:"February 17, 2025",hours:"6:00 AM – 8:00 PM · Monday to Saturday",lat:9.15,lng:124.72},
+ {name:"BGH-Sabtang BUCAS Center",island:"Luzon",region:"Region II (Cagayan Valley)",province:"Batanes",level:"2",fullName:"Batanes General Hospital (BGH) Sabtang BUCAS Center",proponent:"Batanes General Hospital",address:"National Road, Sinakan, Sabtang, Batanes",inaug:"June 27, 2025",start:"March 24, 2025",hours:"6:00 AM – 10:00 PM · Monday to Sunday",lat:20.34,lng:121.85},
+ {name:"SPMC-MDH BUCAS Center",island:"Mindanao",region:"Region XI (Davao Region)",province:"Davao del Sur",level:"3",fullName:"Southern Philippines Medical Center (SPMC) – Marilog District Hospital BUCAS Center",proponent:"Southern Philippines Medical Center",address:"Marilog District Hospital, Sitio Lower Kibalang Rd, Marilog District, Davao Del Sur",inaug:"March 26, 2025",start:"January 3, 2025",hours:"Mon–Tue 7 AM–11 PM · Wed 7 AM–4 PM",lat:7.32,lng:125.38},
+ {name:"TMC BUCAS Center-Better World",island:"Luzon",region:"National Capital Region (NCR)",province:"City of Manila",level:"3",fullName:"Tondo Medical Center (TMC) BUCAS Center-Better World",proponent:"Tondo Medical Center",address:"Smokey Mountain Center Brgy. 128 Paradise Heights, Tondo, Manila",inaug:"April 2, 2025",start:"April 7, 2025",hours:"8:00 AM – 4:00 PM · Monday & Tuesday",lat:14.60,lng:120.97},
+ {name:"JASMC-BUCAS Victoria, Tarlac",island:"Luzon",region:"Region III (Central Luzon)",province:"Tarlac",level:"3",fullName:"Jose B. Lingad Memorial General Hospital Ambulatory Surgical and Multispecialty Center with BUCAS – Victoria, Tarlac",proponent:"Jose B. Lingad Memorial General Hospital",address:"RHU 1 Compound, Tarlac Victoria Road, Brgy. Bulo, Victoria, Tarlac",inaug:"April 4, 2025",start:"April 4, 2025",hours:"6:00 AM – 10:00 PM",lat:15.58,lng:120.65},
+ {name:"BataanGHMC BUCAS Center",island:"Luzon",region:"Region III (Central Luzon)",province:"Bataan",level:"3",fullName:"Bataan General Hospital And Medical Center (BataanGHMC) BUCAS Center",proponent:"Bataan General Hospital And Medical Center",address:"LTO Compound, Gov. J.J. Linao National Road, Barangay Ala-Uli, Pilar, Bataan",inaug:"April 9, 2025",start:"April 21, 2025",hours:"6:00 AM – 10:00 PM",lat:14.67,lng:120.53},
+ {name:"DJFMH BUCAS Center",island:"Luzon",region:"National Capital Region (NCR)",province:"City of Manila",level:"3",fullName:"Dr. Jose Fabella Memorial Hospital (DJFMH) BUCAS Center",proponent:"Dr. Jose Fabella Memorial Hospital",address:"Dr. Jose Fabella Memorial Hospital Compound, Tayuman Street, Sta. Cruz, Manila",inaug:"April 14, 2025",start:"April 16, 2025",hours:"Mon–Fri 5–10 PM · Weekends & Holidays 8 AM–5 PM",lat:14.608,lng:120.987},
+ {name:"CGH BUCAS Center",island:"Mindanao",region:"Region X (Northern Mindanao)",province:"Camiguin",level:"1",fullName:"Camiguin General Hospital (CGH) BUCAS Center",proponent:"Camiguin General Hospital",address:"Camiguin General Hospital, Lakas Street, Poblacion, Mambajao, Camiguin",inaug:"Not applicable",start:"March 4, 2024",hours:"6:00 AM – 8:00 PM",lat:9.25,lng:124.73},
+ {name:"NMMC BUCAS Center",island:"Mindanao",region:"Region X (Northern Mindanao)",province:"Misamis Oriental",level:"3",fullName:"Northern Mindanao Medical Center (NMMC) BUCAS Center",proponent:"Northern Mindanao Medical Center",address:"Northern Mindanao Medical Center, Capitol Compound, Cagayan de Oro City, Misamis Oriental",inaug:"Not applicable",start:"April 12, 2024",hours:"Mon–Fri 6 AM–10 PM · Sat & Sun 6 AM–2 PM",lat:8.47,lng:124.63},
+ {name:"NMGH BUCAS Center",island:"Mindanao",region:"Region X (Northern Mindanao)",province:"Misamis Oriental",level:"3",fullName:"Northeastern Misamis General Hospital (NMGH) BUCAS Center",proponent:"Northeastern Misamis General Hospital",address:"Northeastern Misamis General Hospital, Looc, Villanueva, Misamis Oriental",inaug:"Not applicable",start:"April 12, 2024",hours:"8:00 AM – 5:00 PM",lat:8.54,lng:124.72},
+ {name:"BMC BUCAS Center",island:"Luzon",region:"Region V (Bicol Region)",province:"Camarines Sur",level:"3",fullName:"Bicol Medical Center (BMC) BUCAS Center",proponent:"Bicol Medical Center",address:"Bicol Medical Center, Cadlan, Pili, Camarines Sur",inaug:"June 16, 2025",start:"April 28, 2025",hours:"Monday to Friday · 8:00 AM – 5:00 PM",lat:13.57,lng:123.28},
+ {name:"DJSMMC BUCAS Center",island:"Visayas",region:"Region VI (Western Visayas)",province:"Iloilo",level:"2",fullName:"Don Jose S. Monfort Medical Center (DJSMMC) BUCAS Center",proponent:"Don Jose S. Monfort Medical Center",address:"Don Jose S. Monfort Medical Center, Brgy Tabucan, Barota Nuevo, Iloilo",inaug:"May 16, 2025",start:"May 16, 2025",hours:"Monday to Friday · 3:00 PM – 11:00 PM",lat:10.80,lng:122.65},
+ {name:"VSMMC SugBUCAS-Capitol",island:"Visayas",region:"Region VII (Central Visayas)",province:"City of Cebu",level:"3",fullName:"Vicente Sotto Memorial Medical Center (VSMMC) SugBUCAS Capitol Ambulatory Surgical Clinic",proponent:"Vicente Sotto Memorial Medical Center",address:"Government Center, Clavano Street, Capitol Site, Cebu City",inaug:"August 6, 2025",start:"August 1, 2025",hours:"8:00 AM – 5:00 PM",lat:10.32,lng:123.90},
+ {name:"VSMMC SugBUCAS-Sudlon",island:"Visayas",region:"Region VII (Central Visayas)",province:"City of Cebu",level:"3",fullName:"Vicente Sotto Memorial Medical Center (VSMMC) SugBUCAS Sudlon Ambulatory Surgical Clinic",proponent:"Vicente Sotto Memorial Medical Center",address:"Dona Modesta Gaisano, Government Center, Sudlon, Brgy Lahug, Cebu City",inaug:"August 6, 2025",start:"August 7, 2025",hours:"24 hours",lat:10.34,lng:123.88},
+ {name:"CRH BUCAS Center",island:"Mindanao",region:"Region XIII (Caraga)",province:"Dinagat Islands",level:"",fullName:"Caraga Regional Hospital (CRH) BUCAS Center",proponent:"Caraga Regional Hospital",address:"Basilisa Field Hospital, Dona Helene, Basilisa, Province of Dinagat Islands",inaug:"For inauguration",start:"August 4, 2025",hours:"6:00 PM – 10:00 PM",lat:10.31,lng:125.61},
+ {name:"WVSGH BUCAS Center",island:"Visayas",region:"Region VI (Western Visayas)",province:"Iloilo",level:"3",fullName:"Western Visayas Sanitarium and General Hospital (WVSGH) BUCAS Center",proponent:"Western Visayas Sanitarium and General Hospital",address:"Western Visayas Sanitarium and General Hospital, Inangayan, Santa Barbara, Iloilo",inaug:"October 22, 2025",start:"September 1, 2025",hours:"7:00 AM – 5:00 PM",lat:10.83,lng:122.53},
+ {name:"EVMC UEP BUCAS Center",island:"Visayas",region:"Region VIII (Eastern Visayas)",province:"Northern Samar",level:"3",fullName:"Eastern Visayas Medical Center (EVMC) – University of Eastern Philippines BUCAS Center",proponent:"Eastern Visayas Medical Center",address:"Zone 1, Catarman, Northern Samar",inaug:"October 13, 2025",start:"September 3, 2025",hours:"8:00 AM – 5:00 PM",lat:12.50,lng:124.63},
+ {name:"DEDVMH BUCAS Center",island:"Visayas",region:"Region VII (Central Visayas)",province:"Bohol",level:"2",fullName:"Don Emilio Del Valle Memorial Hospital (DEDVMH) AMOMA BUCAS Center",proponent:"Don Emilio Del Valle Memorial Hospital",address:"Don Emilio Del Valle Memorial Hospital, Ubay, Bohol",inaug:"Not applicable",start:"October 17, 2025",hours:"5:00 PM – 10:00 PM",lat:10.06,lng:124.47},
+ {name:"APMC-MCGH BUCAS Center",island:"Mindanao",region:"BARMM",province:"Lanao del Sur",level:"3",fullName:"Amai Pakpak Medical Center (APMC) – Marawi City General Hospital BUCAS Center",proponent:"Amai Pakpak Medical Center",address:"Marawi City General Hospital, Brgy. Tolali, Marawi City, Lanao Del Sur",inaug:"October 28, 2025",start:"October 28, 2025",hours:"Monday to Friday · 8:00 AM – 5:00 PM",lat:7.99,lng:124.29}
+];
+
+// ── REGION CENTROIDS ──────────────────────────────────────────────────
+const RC={
+  "National Capital Region (NCR)":{lat:14.60,lng:121.00},
+  "Region I (Ilocos Region)":{lat:17.00,lng:120.47},
+  "Region II (Cagayan Valley)":{lat:17.60,lng:121.75},
+  "Region III (Central Luzon)":{lat:15.48,lng:120.91},
+  "CALABARZON":{lat:14.10,lng:121.20},
+  "MIMAROPA":{lat:10.50,lng:119.50},
+  "Region V (Bicol Region)":{lat:13.42,lng:123.39},
+  "Cordillera Administrative Region (CAR)":{lat:17.35,lng:121.17},
+  "Region VI (Western Visayas)":{lat:10.90,lng:122.75},
+  "Region VII (Central Visayas)":{lat:10.30,lng:123.90},
+  "Region VIII (Eastern Visayas)":{lat:11.25,lng:124.85},
+  "Region IX (Zamboanga Peninsula)":{lat:7.83,lng:123.30},
+  "Region X (Northern Mindanao)":{lat:8.48,lng:124.65},
+  "Region XI (Davao Region)":{lat:7.30,lng:125.68},
+  "Region XII (SOCCSKSARGEN)":{lat:6.27,lng:124.68},
+  "Region XIII (Caraga)":{lat:9.20,lng:125.98},
+  "BARMM":{lat:7.20,lng:124.38}
+};
+
+// ── COLOURS ───────────────────────────────────────────────────────────
+const IC={
+  Luzon:   {base:"#1B4F8A",mid:"#3A7CC5",glow:"rgba(27,79,138,.16)"},
+  Visayas: {base:"#0A6B4A",mid:"#1FAE7A",glow:"rgba(10,107,74,.16)"},
+  Mindanao:{base:"#9B3510",mid:"#D95C28",glow:"rgba(155,53,16,.16)"}
+};
+const iC=(i,k="mid")=>(IC[i]||IC.Luzon)[k];
+const lvlB=l=>l?`<span class="badge b-lv">Lv ${l}</span>`:"";
+
+// ── STATE ─────────────────────────────────────────────────────────────
+let viewMode="map", igF="all", topo=null;
+const gF=()=>igF==="all"?RAW:RAW.filter(d=>d.island===igF);
+
+// ── HELPERS ───────────────────────────────────────────────────────────
+function grpReg(data){
+  const m={};
+  data.forEach(d=>{
+    if(!m[d.region]) m[d.region]={region:d.region,island:d.island,centers:[],pset:new Set(),coords:RC[d.region]||{lat:12,lng:122}};
+    m[d.region].centers.push(d);
+    m[d.region].pset.add(d.province);
+  });
+  return Object.values(m).map(g=>({...g,count:g.centers.length,provinces:g.pset.size}));
+}
+
+// ── KPIs & SIDEBAR ───────────────────────────────────────────────────
+function updateKPIs(){
+  const f=gF();
+  document.getElementById("k-total").textContent=f.length;
+  document.getElementById("k-lz").textContent=f.filter(d=>d.island==="Luzon").length;
+  document.getElementById("k-vi").textContent=f.filter(d=>d.island==="Visayas").length;
+  document.getElementById("k-mi").textContent=f.filter(d=>d.island==="Mindanao").length;
+  document.getElementById("lc-lz").textContent=f.filter(d=>d.island==="Luzon").length;
+  document.getElementById("lc-vi").textContent=f.filter(d=>d.island==="Visayas").length;
+  document.getElementById("lc-mi").textContent=f.filter(d=>d.island==="Mindanao").length;
+}
+function buildList(groups){
+  const el=document.getElementById("rl"); el.innerHTML="";
+  [...groups].sort((a,b)=>b.count-a.count).forEach(g=>{
+    const d=document.createElement("div"); d.className="ri";
+    d.innerHTML=`<div class="ri-dot" style="background:${iC(g.island)}"></div><div class="ri-name">${g.region}</div><div class="ri-n">${g.count}</div>`;
+    d.addEventListener("click",()=>showDetail(g)); el.appendChild(d);
+  });
+}
+
+// ── TOOLTIP ───────────────────────────────────────────────────────────
+const ttEl=document.getElementById("tt");
+let ttT;
+function showRegTT(evt,g){
+  clearTimeout(ttT);
+  const col=iC(g.island,"mid");
+  const rows=g.centers.slice(0,4).map(c=>`
+    <div class="tt-c">
+      <div class="tt-cn">${c.name}</div>
+      <div class="tt-cm">${lvlB(c.level)} ${c.province}</div>
+      <div class="tt-cm">🕐 ${c.hours}</div>
+      <div class="tt-cm">📅 Inaug: ${c.inaug} &nbsp;·&nbsp; Start: ${c.start}</div>
+    </div>`).join("");
+  const more=g.centers.length>4?`<div style="font-size:9.5px;color:var(--text3);text-align:center;padding:3px 0">+${g.centers.length-4} more — click to expand</div>`:"";
+  ttEl.innerHTML=`
+    <div class="tt-stripe" style="background:linear-gradient(90deg,${iC(g.island,"base")},${col})"></div>
+    <div class="tt-head">
+      <div class="tt-ig" style="color:${col}">${g.island}</div>
+      <div class="tt-region">${g.region}</div>
+      <div class="tt-sub">${g.count} center${g.count!==1?"s":""} &nbsp;·&nbsp; ${g.provinces} province${g.provinces!==1?"s":""}</div>
+    </div>
+    <div class="tt-div"></div>
+    <div class="tt-body">
+      <div class="tt-ch-head">Centers</div>${rows}${more}
+    </div>`;
+  ttEl.style.display="block"; mvTT(evt);
+}
+function mvTT(evt){
+  const W=310,H=360,p=14;
+  let x=evt.clientX+p, y=evt.clientY+p;
+  if(x+W>window.innerWidth) x=evt.clientX-W-p;
+  if(y+H>window.innerHeight) y=evt.clientY-H-p;
+  ttEl.style.left=x+"px"; ttEl.style.top=y+"px";
+}
+function hideTT(){ttT=setTimeout(()=>{ttEl.style.display="none";},140);}
+
+// ── DETAIL PANEL ──────────────────────────────────────────────────────
+function showDetail(g){
+  const panel=document.getElementById("dp"); panel.style.display="flex";
+  const col=iC(g.island,"mid");
+  document.getElementById("dp-ig").textContent=g.island;
+  document.getElementById("dp-ig").style.color=col;
+  document.getElementById("dp-reg").textContent=g.region;
+  document.getElementById("dp-cnt").textContent=g.count;
+  document.getElementById("dp-prov").textContent=g.provinces;
+  document.getElementById("dp-lv3").textContent=g.centers.filter(c=>c.level==="3").length;
+  document.getElementById("dp-list").innerHTML=g.centers.map(c=>`
+    <div class="dp-item">
+      <div class="dp-iname">${lvlB(c.level)} ${c.name}</div>
+      <div class="dp-ifull">${c.fullName}</div>
+      <div class="dp-igrid">
+        <div class="dp-f">Province<span>${c.province}</span></div>
+        <div class="dp-f">Proponent Hospital<span>${c.proponent}</span></div>
+        <div class="dp-f">Hospital Level<span>${c.level||"—"}</span></div>
+        <div class="dp-f">Inauguration<span>${c.inaug}</span></div>
+        <div class="dp-f">Start Date<span>${c.start}</span></div>
+        <div class="dp-f full">Operating Hours<span>${c.hours}</span></div>
+        <div class="dp-f full">Address<span>${c.address}</span></div>
+      </div>
+    </div>`).join("");
+  document.querySelectorAll(".ri").forEach(el=>
+    el.classList.toggle("sel", el.querySelector(".ri-name").textContent===g.region));
+}
+document.getElementById("dp-close").addEventListener("click",()=>{
+  document.getElementById("dp").style.display="none";
+  document.querySelectorAll(".ri").forEach(el=>el.classList.remove("sel"));
+});
+
+// ── PROJECTION HELPER ─────────────────────────────────────────────────
+function makeProj(W,H){
+  return d3.geoMercator().center([122,13]).scale(Math.min(W,H)*2.5).translate([W/2,H/2]);
+}
+
+// ── DRAW BUBBLE MAP ────────────────────────────────────────────────────
+function drawBubbleMap(groups){
+  const sv=document.getElementById("map-svg");
+  const W=sv.parentElement.offsetWidth||800;
+  const H=sv.parentElement.offsetHeight||600;
+  sv.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  sv.innerHTML="";
+  const ns="http://www.w3.org/2000/svg";
+  const proj=makeProj(W,H);
+  const pg=d3.geoPath(proj);
+  const defs=document.createElementNS(ns,"defs"); sv.appendChild(defs);
+
+  // Land
+  if(topo){
+    const f=topojson.feature(topo,topo.objects.countries).features.find(f=>String(f.id)==="608");
+    if(f){
+      const p=document.createElementNS(ns,"path");
+      p.setAttribute("d",pg(f)); p.setAttribute("fill","var(--map-land)");
+      p.setAttribute("stroke","var(--map-stroke)"); p.setAttribute("stroke-width","0.6");
+      sv.appendChild(p);
+    }
+  }
+
+  // ── MODERATE bubble scale: max 40px, min 10px ──────────────────────
+  const mx=Math.max(...groups.map(g=>g.count),1);
+  const rs=d3.scaleSqrt().domain([1,mx]).range([3,13]);
+
+  [...groups].sort((a,b)=>b.count-a.count).forEach(g=>{
+    const [px,py]=proj([g.coords.lng,g.coords.lat]);
+    if(!px||!py) return;
+    const r=rs(g.count);
+    const col=iC(g.island,"mid"), base=iC(g.island,"base"), glow=iC(g.island,"glow");
+    const grp=document.createElementNS(ns,"g"); grp.style.cursor="pointer";
+
+    // Gradient definition
+    const gid="mg"+g.region.replace(/\W/g,"");
+    const grad=document.createElementNS(ns,"radialGradient");
+    grad.setAttribute("id",gid); grad.setAttribute("cx","38%"); grad.setAttribute("cy","36%"); grad.setAttribute("r","62%");
+    const s1=document.createElementNS(ns,"stop"); s1.setAttribute("offset","0%"); s1.setAttribute("stop-color",col); s1.setAttribute("stop-opacity","0.92");
+    const s2=document.createElementNS(ns,"stop"); s2.setAttribute("offset","100%"); s2.setAttribute("stop-color",base); s2.setAttribute("stop-opacity","0.97");
+    grad.appendChild(s1); grad.appendChild(s2); defs.appendChild(grad);
+
+    // Subtle outer glow ring
+    const gc=document.createElementNS(ns,"circle");
+    gc.setAttribute("cx",px); gc.setAttribute("cy",py); gc.setAttribute("r",r+5);
+    gc.setAttribute("fill",glow); grp.appendChild(gc);
+
+    // Thin outer ring
+    const ring=document.createElementNS(ns,"circle");
+    ring.setAttribute("cx",px); ring.setAttribute("cy",py); ring.setAttribute("r",r+1.5);
+    ring.setAttribute("fill","none"); ring.setAttribute("stroke",col);
+    ring.setAttribute("stroke-width","0.8"); ring.setAttribute("opacity","0.4");
+    grp.appendChild(ring);
+
+    // Main bubble
+    const c=document.createElementNS(ns,"circle");
+    c.setAttribute("cx",px); c.setAttribute("cy",py); c.setAttribute("r",r);
+    c.setAttribute("fill",`url(#${gid})`);
+    c.setAttribute("stroke","rgba(255,255,255,.18)"); c.setAttribute("stroke-width","1");
+    grp.appendChild(c);
+
+    // Count label — always shown
+    const nt=document.createElementNS(ns,"text");
+    nt.setAttribute("x",px); nt.setAttribute("y",py+4.5);
+    nt.setAttribute("text-anchor","middle"); nt.setAttribute("fill","#fff");
+    nt.setAttribute("font-family","Libre Baskerville,serif");
+    nt.setAttribute("font-size",Math.min(r*.62,16)); nt.setAttribute("font-weight","700");
+    nt.setAttribute("pointer-events","none");
+    nt.textContent=g.count; grp.appendChild(nt);
+
+    grp.addEventListener("mouseenter",evt=>showRegTT(evt,g));
+    grp.addEventListener("mousemove",mvTT);
+    grp.addEventListener("mouseleave",hideTT);
+    grp.addEventListener("click",()=>showDetail(g));
+    sv.appendChild(grp);
+  });
+}
+
+// ── DRAW CHOROPLETH / HEATMAP ─────────────────────────────────────────
+// Draws the Philippine land tinted per island group + overlaid
+// region squares (proportional squares, colour-coded, no animation)
+function drawChoro(groups){
+  const sv=document.getElementById("choro-svg");
+  const W=sv.parentElement.offsetWidth||800;
+  const H=sv.parentElement.offsetHeight||600;
+  sv.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  sv.innerHTML="";
+  const ns="http://www.w3.org/2000/svg";
+  const proj=makeProj(W,H);
+  const pg=d3.geoPath(proj);
+  const defs=document.createElementNS(ns,"defs"); sv.appendChild(defs);
+
+  const mx=Math.max(...groups.map(g=>g.count),1);
+
+  // Per-island colour scales (light → vivid)
+  const colorScale={
+    Luzon:   d3.scaleLinear().domain([0,mx]).range(["#0d2744","#3A7CC5"]),
+    Visayas: d3.scaleLinear().domain([0,mx]).range(["#062b1e","#1FAE7A"]),
+    Mindanao:d3.scaleLinear().domain([0,mx]).range(["#3a1508","#D95C28"])
+  };
+
+  // Region count lookup
+  const countByRegion={};
+  const islandByRegion={};
+  groups.forEach(g=>{ countByRegion[g.region]=g.count; islandByRegion[g.region]=g.island; });
+
+  // Land base
+  if(topo){
+    const f=topojson.feature(topo,topo.objects.countries).features.find(f=>String(f.id)==="608");
+    if(f){
+      const p=document.createElementNS(ns,"path");
+      p.setAttribute("d",pg(f)); p.setAttribute("fill","#152030");
+      p.setAttribute("stroke","#2a3f58"); p.setAttribute("stroke-width","0.5");
+      sv.appendChild(p);
+    }
+  }
+
+  // Square marker per region — size proportional to count, colour by island
+  const sqScale=d3.scaleSqrt().domain([1,mx]).range([5,17]);
+
+  groups.forEach(g=>{
+    const [px,py]=proj([g.coords.lng,g.coords.lat]);
+    if(!px||!py) return;
+    const half=sqScale(g.count)/2;
+    const col=(colorScale[g.island]||colorScale.Luzon)(g.count);
+    const midCol=iC(g.island,"mid");
+    const grp=document.createElementNS(ns,"g"); grp.style.cursor="pointer";
+
+    // Fill rect
+    const rect=document.createElementNS(ns,"rect");
+    rect.setAttribute("x",px-half); rect.setAttribute("y",py-half);
+    rect.setAttribute("width",half*2); rect.setAttribute("height",half*2);
+    rect.setAttribute("rx","4");
+    rect.setAttribute("fill",col);
+    rect.setAttribute("stroke",midCol); rect.setAttribute("stroke-width","1.2");
+    rect.setAttribute("opacity","0.92");
+    grp.appendChild(rect);
+
+    // Count text
+    const nt=document.createElementNS(ns,"text");
+    nt.setAttribute("x",px); nt.setAttribute("y",py+4.5);
+    nt.setAttribute("text-anchor","middle"); nt.setAttribute("fill","#fff");
+    nt.setAttribute("font-family","Libre Baskerville,serif");
+    nt.setAttribute("font-size",Math.min(half*.7,15)); nt.setAttribute("font-weight","700");
+    nt.setAttribute("pointer-events","none");
+    nt.textContent=g.count; grp.appendChild(nt);
+
+    grp.addEventListener("mouseenter",evt=>showRegTT(evt,g));
+    grp.addEventListener("mousemove",mvTT);
+    grp.addEventListener("mouseleave",hideTT);
+    grp.addEventListener("click",()=>showDetail(g));
+    sv.appendChild(grp);
+  });
+
+  // Build choropleth legend swatches
+  const swEl=document.getElementById("ch-swatches");
+  swEl.innerHTML="";
+  const steps=[1,3,5,8,mx];
+  ["Luzon","Visayas","Mindanao"].forEach(island=>{
+    const row=document.createElement("div"); row.className="ch-swatch-row";
+    const sw=document.createElement("div"); sw.className="ch-swatch";
+    sw.style.background=iC(island,"mid"); sw.style.width="28px"; sw.style.height="10px"; sw.style.borderRadius="2px";
+    row.appendChild(sw);
+    const lbl=document.createElement("span"); lbl.textContent=island;
+    row.appendChild(lbl); swEl.appendChild(row);
+  });
+  const noteRow=document.createElement("div"); noteRow.style.cssText="font-size:9px;color:var(--text3);margin-top:5px;line-height:1.4";
+  noteRow.textContent="Square size = center count";
+  swEl.appendChild(noteRow);
+}
+
+// ── DRAW BAR CHART ────────────────────────────────────────────────────
+function drawBar(groups){
+  const sv=document.getElementById("bar-svg");
+  const W=sv.parentElement.offsetWidth||800;
+  const sorted=[...groups].sort((a,b)=>b.count-a.count);
+  const bH=36, gap=7, ml=228, mr=80, mt=18, mb=24;
+  const H=mt+sorted.length*(bH+gap)+mb;
+  sv.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  sv.style.width="100%"; sv.style.height=H+"px";
+  sv.innerHTML="";
+  const ns="http://www.w3.org/2000/svg";
+  const mx=Math.max(...sorted.map(g=>g.count),1), iW=W-ml-mr;
+  const defs=document.createElementNS(ns,"defs"); sv.appendChild(defs);
+
+  sorted.forEach((g,i)=>{
+    const col=iC(g.island,"mid"), base=iC(g.island,"base");
+    const y=mt+i*(bH+gap), bw=(g.count/mx)*iW;
+    const grp=document.createElementNS(ns,"g"); grp.style.cursor="pointer";
+
+    const gid="bg"+i;
+    const grad=document.createElementNS(ns,"linearGradient");
+    grad.setAttribute("id",gid); grad.setAttribute("x1","0"); grad.setAttribute("x2","1"); grad.setAttribute("y1","0"); grad.setAttribute("y2","0");
+    const s1=document.createElementNS(ns,"stop"); s1.setAttribute("offset","0%"); s1.setAttribute("stop-color",col); s1.setAttribute("stop-opacity","0.95");
+    const s2=document.createElementNS(ns,"stop"); s2.setAttribute("offset","100%"); s2.setAttribute("stop-color",base); s2.setAttribute("stop-opacity","0.6");
+    grad.appendChild(s1); grad.appendChild(s2); defs.appendChild(grad);
+
+    // Track bg
+    const bg=document.createElementNS(ns,"rect");
+    bg.setAttribute("x",ml); bg.setAttribute("y",y); bg.setAttribute("width",iW); bg.setAttribute("height",bH);
+    bg.setAttribute("rx","5"); bg.setAttribute("fill","var(--bg3)"); grp.appendChild(bg);
+    // Bar
+    const bar=document.createElementNS(ns,"rect");
+    bar.setAttribute("x",ml); bar.setAttribute("y",y); bar.setAttribute("width",Math.max(bw,3)); bar.setAttribute("height",bH);
+    bar.setAttribute("rx","5"); bar.setAttribute("fill",`url(#${gid})`); grp.appendChild(bar);
+    // Island stripe
+    const st=document.createElementNS(ns,"rect");
+    st.setAttribute("x",ml-3.5); st.setAttribute("y",y+5); st.setAttribute("width",2.5); st.setAttribute("height",bH-10);
+    st.setAttribute("rx","1.2"); st.setAttribute("fill",col); grp.appendChild(st);
+    // Label
+    const label=g.region.replace(" Administrative Region (CAR)","(CAR)").replace("National Capital Region","NCR");
+    const nt=document.createElementNS(ns,"text");
+    nt.setAttribute("x",ml-8); nt.setAttribute("y",y+bH/2+4);
+    nt.setAttribute("text-anchor","end"); nt.setAttribute("fill","var(--text2)");
+    nt.setAttribute("font-family","Outfit,sans-serif"); nt.setAttribute("font-size","10.5"); nt.setAttribute("font-weight","500");
+    nt.textContent=label.length>32?label.slice(0,31)+"…":label; grp.appendChild(nt);
+    // Count
+    const ct=document.createElementNS(ns,"text");
+    ct.setAttribute("x",ml+bw+7); ct.setAttribute("y",y+bH/2+5);
+    ct.setAttribute("fill","#fff"); ct.setAttribute("font-family","Libre Baskerville,serif");
+    ct.setAttribute("font-size","14"); ct.setAttribute("font-weight","700");
+    ct.textContent=g.count; grp.appendChild(ct);
+    // Province note
+    const pt=document.createElementNS(ns,"text");
+    pt.setAttribute("x",ml+bw+28); pt.setAttribute("y",y+bH/2+5);
+    pt.setAttribute("fill","var(--text3)"); pt.setAttribute("font-family","Outfit,sans-serif"); pt.setAttribute("font-size","8.5");
+    pt.textContent=`${g.provinces} prov.`; grp.appendChild(pt);
+
+    grp.addEventListener("mouseenter",evt=>showRegTT(evt,g));
+    grp.addEventListener("mousemove",mvTT);
+    grp.addEventListener("mouseleave",hideTT);
+    grp.addEventListener("click",()=>showDetail(g));
+    sv.appendChild(grp);
+  });
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────
+function render(){
+  const groups=grpReg(gF());
+  buildList(groups);
+
+  // Show/hide panels
+  document.getElementById("map-svg").style.display   = viewMode==="map"   ? "block":"none";
+  document.getElementById("choro-svg").style.display = viewMode==="choro" ? "block":"none";
+  document.getElementById("bar-wrap").style.display  = viewMode==="bar"   ? "block":"none";
+  document.getElementById("sz-leg").style.display    = viewMode==="map"   ? "block":"none";
+  document.getElementById("ch-leg").style.display    = viewMode==="choro" ? "block":"none";
+
+  if(viewMode==="map")        drawBubbleMap(groups);
+  else if(viewMode==="choro") drawChoro(groups);
+  else                        drawBar(groups);
+}
+
+// ── ISLAND FILTER ─────────────────────────────────────────────────────
+document.querySelectorAll(".fbtn[data-ig]").forEach(b=>{
+  b.addEventListener("click",()=>{
+    document.querySelectorAll(".fbtn[data-ig]").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); igF=b.dataset.ig; updateKPIs(); render();
+  });
+});
+
+// ── VIEW TOGGLE ───────────────────────────────────────────────────────
+["map","choro","bar"].forEach(v=>{
+  document.getElementById("btn-"+v).addEventListener("click",()=>{
+    ["map","choro","bar"].forEach(x=>document.getElementById("btn-"+x).classList.remove("on"));
+    document.getElementById("btn-"+v).classList.add("on");
+    viewMode=v; render();
+  });
+});
+
+window.addEventListener("resize",()=>{clearTimeout(window._rt); window._rt=setTimeout(render,120);});
+
+// ── BOOT ──────────────────────────────────────────────────────────────
+(async()=>{
+  try{ topo=await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-10m.json"); }
+  catch(e){ topo=null; }
+  updateKPIs();
+  render();
+})();
+</script>
+</body>
+</html>
